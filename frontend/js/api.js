@@ -14,4 +14,4 @@ export async function checkBackendHealth() {
         statusIndicator.textContent = 'Backend status: Offline';
         statusIndicator.style.color = '#ef4444';
     }
-}
+} 

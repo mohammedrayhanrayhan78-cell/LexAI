@@ -24,6 +24,8 @@ services:
       dockerfile: Dockerfile
     container_name: legal_ai_backend
     restart: always
+    env_file:
+      - ./.env
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@db:5432/legal_ai_db
       - ENVIRONMENT=development

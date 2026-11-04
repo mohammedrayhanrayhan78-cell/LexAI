@@ -1,52 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Legal AI Assistant</title>
-    <link rel="stylesheet" href="./css/themes.css">
-    <link rel="stylesheet" href="./css/main.css">
+    <script>
+        const token = localStorage.getItem('access_token');
+        window.location.replace(token ? 'chat.html' : 'login.html');
+    </script>
 </head>
-<body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>Legal AI</h2>
-                <button id="new-chat-btn" class="btn-primary">+ New Chat</button>
-            </div>
-            <div class="sidebar-history">
-                <div class="history-item">Constitution Inquiry</div>
-                <div class="history-item">Contract Clause Review</div>
-            </div>
-            <div class="sidebar-footer">
-                <button id="theme-toggle-btn" class="btn-secondary">Toggle Theme</button>
-            </div>
-        </aside>
-        
-        <main class="main-content">
-            <header class="top-nav">
-                <h1 id="chat-title">New Legal Session</h1>
-                <button id="settings-btn" class="btn-icon" aria-label="Settings">⚙️</button>
-            </header>
-            
-            <div id="chat-window" class="chat-window">
-                <div class="message assistant-message">
-                    <div class="message-content">
-                        Welcome to the Legal AI Assistant. How can I assist you with legal research today?
-                    </div>
-                </div>
-            </div>
-            
-            <div class="input-container">
-                <div class="input-wrapper">
-                    <textarea id="user-input" placeholder="Ask a legal question or upload documents..." rows="1"></textarea>
-                    <button id="send-btn" class="btn-send" aria-label="Send Message">Send</button>
-                </div>
-                <div id="status-indicator" class="status-indicator">Backend status: Checking...</div>
-            </div>
-        </main>
-    </div>
-
-    <script type="module" src="./js/app.js"></script>
-</body>
+<body></body>
 </html>

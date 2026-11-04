@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Legal AI Assistant</title>
+    <link rel="stylesheet" href="./css/themes.css">
+    <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Legal AI</h2>
+                <button id="new-chat-btn" class="btn-primary">+ New Chat</button>
+            </div>
+            
+            <div class="sidebar-section-title">Conversations</div>
+            <div class="sidebar-history" id="conversation-list"></div>
+
+            <div class="sidebar-section-title" style="margin-top: 1rem;">Knowledge Base</div>
+            <div class="document-upload-section">
+                <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;">
+                <button id="upload-doc-btn" class="btn-secondary">+ Upload PDF</button>
+                <div id="document-list" class="document-list"></div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="theme-toggle-btn" class="btn-secondary">Toggle Theme</button>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="top-nav">
+                <h1 id="chat-title">New Legal Session</h1>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span id="user-email-display" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+                    <button id="logout-btn" class="btn-icon" aria-label="Logout" title="Logout">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+            
+            <div id="chat-window" class="chat-window">
+                <div class="message assistant-message">
+                    <div class="message-content">
+                        Welcome to LexAI. Use voice input to speak your legal queries.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <div id="image-preview-container" class="image-preview-container" style="display: none;">
+                    <img id="image-preview-thumb" src="" alt="Preview">
+                    <button id="remove-image-btn" title="Remove image">×</button>
+                </div>
+                <div class="input-wrapper">
+                    <input type="file" id="image-file-input" accept="image/*" style="display: none;">
+                    <button id="attach-image-btn" class="btn-icon" title="Attach Image" style="font-size: 1.2rem; padding: 0 0.5rem; cursor: pointer;">📎</button>
+                    <button id="mic-btn" class="btn-icon" title="Voice Input" style="font-size: 1.2rem; padding: 0 0.5rem; cursor: pointer;">🎤</button>
+                    <textarea id="user-input" placeholder="Ask a legal question, attach an image, or use voice..." rows="1"></textarea>
+                    <button id="send-btn" class="btn-send" aria-label="Send Message">Send</button>
+                </div>
+                <div id="status-indicator" class="status-indicator">Backend status: Connected</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script type="module" src="./js/chat.js"></script>
+    <script type="module" src="./js/documents.js"></script>
+    <script type="module" src="./js/voice.js"></script>
+</body>
+</html>
