@@ -10,6 +10,10 @@ from alembic import context
 from app.core.config import settings
 from app.models.base import Base
 from app.models.user import User  # Ensure User is imported for autogenerate
+from app.models.conversation import Conversation  # noqa: F401
+from app.models.message import Message  # noqa: F401
+from app.models.document import Document  # noqa: F401
+from app.models.document_chunk import DocumentChunk  # noqa: F401
 
 config = context.config
 
@@ -18,7 +22,9 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-# Override sqlalchemy.url from settings (handling asyncpg prefix translation for alembic if needed)
+# Override sqlalchemy.url from settings.
+# Alembic needs the asyncpg URL for async migrations.
+# When running alembic CLI outside Docker the DATABASE_URL env var must be set.
 db_url = settings.DATABASE_URL
 config.set_main_option("sqlalchemy.url", db_url)
 

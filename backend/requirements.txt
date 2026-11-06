@@ -17,8 +17,12 @@ pypdf==4.1.0
 python-multipart==0.0.9
 pytesseract==0.3.10
 pdf2image==1.17.0
+Pillow==10.3.0
 langgraph==0.0.45
 langchain-core==0.1.52
 langsmith==0.1.63
 
-
+# Test dependencies (safe to install in Docker too — lightweight)
+pytest==8.1.1
+pytest-asyncio==0.23.6
+httpx==0.27.2

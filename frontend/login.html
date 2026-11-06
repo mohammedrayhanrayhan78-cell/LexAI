@@ -102,6 +102,8 @@
         </div>
     </div>
     <script type="module">
+        import { API_BASE } from './js/config.js';
+
         const form = document.getElementById('login-form');
         const errorAlert = document.getElementById('error-alert');
         const successAlert = document.getElementById('success-alert');
@@ -115,7 +117,7 @@
             const password = document.getElementById('password').value;
 
             try {
-                const response = await fetch('http://localhost:8000/api/v1/auth/login', {
+                const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -133,7 +135,7 @@
                 successAlert.textContent = 'Login successful! Redirecting...';
                 successAlert.style.display = 'block';
                 setTimeout(() => {
-                    window.location.href = '/';
+                    window.location.href = 'chat.html';
                 }, 1000);
             } catch (err) {
                 errorAlert.textContent = err.message;

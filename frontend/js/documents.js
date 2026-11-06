@@ -1,6 +1,11 @@
+import { API_BASE } from './config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('access_token');
-    if (!token) return;
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
+    }
 
     const uploadBtn = document.getElementById('upload-doc-btn');
     const fileInput = document.getElementById('pdf-file-input');
@@ -8,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadDocuments() {
         try {
-            const res = await fetch('http://localhost:8000/api/v1/documents', {
+            const res = await fetch(`${API_BASE}/api/v1/documents`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -22,6 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderDocuments(docs) {
         documentListEl.innerHTML = '';
+        if (docs.length === 0) {
+            documentListEl.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.85rem;">No documents uploaded yet.</p>';
+            return;
+        }
         docs.forEach(doc => {
             const item = document.createElement('div');
             item.className = 'document-item';
@@ -29,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const titleSpan = document.createElement('span');
             titleSpan.textContent = doc.filename;
             titleSpan.title = doc.filename;
+
+            const statusBadge = document.createElement('span');
+            statusBadge.className = `doc-status doc-status-${doc.status}`;
+            statusBadge.textContent = doc.status;
 
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'doc-delete-btn';
@@ -41,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             item.appendChild(titleSpan);
+            item.appendChild(statusBadge);
             item.appendChild(deleteBtn);
             documentListEl.appendChild(item);
         });
@@ -54,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadBtn.disabled = true;
 
         try {
-            const res = await fetch('http://localhost:8000/api/v1/documents/upload', {
+            const res = await fetch(`${API_BASE}/api/v1/documents/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -78,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function deleteDocument(id) {
         try {
-            const res = await fetch(`http://localhost:8000/api/v1/documents/${id}`, {
+            const res = await fetch(`${API_BASE}/api/v1/documents/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

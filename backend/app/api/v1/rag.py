@@ -16,7 +16,16 @@ from app.core.embeddings import EmbeddingService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/rag", tags=["RAG Documents"])
-embedding_service = EmbeddingService()
+
+# Lazy singleton — created on first request so startup never fails due to missing keys
+_embedding_service: EmbeddingService | None = None
+
+
+def get_embedding_service() -> EmbeddingService:
+    global _embedding_service
+    if _embedding_service is None:
+        _embedding_service = EmbeddingService()
+    return _embedding_service
 
 
 @router.post("/documents/{id}/index", status_code=status.HTTP_200_OK)
@@ -39,6 +48,7 @@ async def index_document(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
     try:
+        embedding_service = get_embedding_service()
         # 1. Chunk text
         chunks = TextChunker.chunk_text(raw_text)
 

@@ -18,9 +18,18 @@ from app.core.embeddings import EmbeddingService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["Documents"])
-embedding_service = EmbeddingService()
 
 MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 MB limit
+
+# Lazy singleton — created on first upload so startup never fails due to missing keys
+_embedding_service: EmbeddingService | None = None
+
+
+def get_embedding_service() -> EmbeddingService:
+    global _embedding_service
+    if _embedding_service is None:
+        _embedding_service = EmbeddingService()
+    return _embedding_service
 
 
 @router.post("/upload", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -61,6 +70,8 @@ async def upload_document(
     await db.refresh(document)
 
     try:
+        embedding_service = get_embedding_service()
+
         # 2. Extract text with page numbers
         pages = PDFExtractionService.extract_text_with_pages(file_bytes)
         if not pages:

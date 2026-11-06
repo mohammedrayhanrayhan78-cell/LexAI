@@ -15,7 +15,15 @@ logger = logging.getLogger(__name__)
 
 class RetrievalService:
     def __init__(self) -> None:
-        self.embedding_service = EmbeddingService()
+        # Lazy-init: EmbeddingService is created on first use so the app can
+        # start even when embedding keys are absent (graceful degradation).
+        self._embedding_service: EmbeddingService | None = None
+
+    @property
+    def embedding_service(self) -> EmbeddingService:
+        if self._embedding_service is None:
+            self._embedding_service = EmbeddingService()
+        return self._embedding_service
 
     async def search_relevant_chunks(
         self, db: AsyncSession, query: str, user_id: uuid.UUID, top_k: int = settings.TOP_K_RETRIEVAL

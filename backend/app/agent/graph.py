@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 import logging
 from langgraph.graph import StateGraph, END
 from sqlalchemy.ext.asyncio import AsyncSession

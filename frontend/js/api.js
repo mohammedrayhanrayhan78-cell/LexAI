@@ -1,7 +1,10 @@
+import { API_BASE } from './config.js';
+
 export async function checkBackendHealth() {
     const statusIndicator = document.getElementById('status-indicator');
+    if (!statusIndicator) return;
     try {
-        const response = await fetch('http://localhost:8000/api/v1/health');
+        const response = await fetch(`${API_BASE}/api/v1/health`);
         if (response.ok) {
             const data = await response.json();
             statusIndicator.textContent = `Backend status: Connected (${data.status})`;
@@ -14,4 +17,4 @@ export async function checkBackendHealth() {
         statusIndicator.textContent = 'Backend status: Offline';
         statusIndicator.style.color = '#ef4444';
     }
-} 
+}

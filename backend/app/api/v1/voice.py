@@ -62,27 +62,17 @@ async def transcribe_audio(
         )
 
 
-@router.post("/synthesize", status_code=status.HTTP_200_OK)
+@router.post("/synthesize", status_code=status.HTTP_501_NOT_IMPLEMENTED)
 async def synthesize_speech(
     payload: dict = Body(...),
     current_user: User = Depends(get_current_user),
 ) -> Response:
-    if not settings.ENABLE_TTS:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Text-to-speech synthesis is disabled.",
-        )
-
-    text = payload.get("text")
-    if not text:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Text payload is required for synthesis.",
-        )
-
-    # Note: Using browser's native Web Speech API synthesis on frontend is recommended when external TTS APIs aren't provisioned.
-    # This endpoint acts as a stub / placeholder returning 501 if backend TTS provider is unconfigured.
+    """
+    TTS synthesis is not configured on the backend.
+    The frontend uses browser-native Web Speech API (window.speechSynthesis) instead.
+    See README for details.
+    """
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Backend TTS provider not configured. Use browser native speech synthesis.",
+        detail="TTS not configured. Use browser native speech synthesis on the frontend.",
     )

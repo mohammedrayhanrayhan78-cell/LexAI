@@ -1,5 +1,6 @@
 import { initThemeToggle } from './theme.js';
 import { attachTTSHandler } from './voice.js';
+import { API_BASE } from './config.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     initThemeToggle();
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const refreshToken = localStorage.getItem('refresh_token');
         if (!refreshToken) return null;
         try {
-            const res = await fetch('http://localhost:8000/api/v1/auth/refresh', {
+            const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refresh_token: refreshToken })
@@ -49,14 +50,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let currentToken = token;
     try {
-        let userRes = await fetch('http://localhost:8000/api/v1/auth/me', {
+        let userRes = await fetch(`${API_BASE}/api/v1/auth/me`, {
             headers: { 'Authorization': `Bearer ${currentToken}` }
         });
         if (userRes.status === 401) {
             const newToken = await tryRefreshToken();
             if (newToken) {
                 currentToken = newToken;
-                userRes = await fetch('http://localhost:8000/api/v1/auth/me', {
+                userRes = await fetch(`${API_BASE}/api/v1/auth/me`, {
                     headers: { 'Authorization': `Bearer ${currentToken}` }
                 });
             }
@@ -101,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadConversations() {
         try {
-            const res = await fetch('http://localhost:8000/api/v1/chat/conversations', {
+            const res = await fetch(`${API_BASE}/api/v1/chat/conversations`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -131,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function createNewConversation(title = 'New Legal Session') {
         try {
-            const res = await fetch('http://localhost:8000/api/v1/chat/conversations', {
+            const res = await fetch(`${API_BASE}/api/v1/chat/conversations`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -161,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         try {
-            const res = await fetch(`http://localhost:8000/api/v1/chat/conversations/${id}/messages`, {
+            const res = await fetch(`${API_BASE}/api/v1/chat/conversations/${id}/messages`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -179,6 +180,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadConversations();
     }
 
+    /**
+     * Render a message bubble.
+     * For assistant messages, the content is rendered as markdown (via marked.js).
+     * Citations are lines starting with "[Source:" which are wrapped in a <cite> block.
+     */
     function appendMessage(role, content) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
@@ -187,6 +193,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         contentDiv.className = 'message-content';
         if (role === 'assistant') {
             contentDiv.innerHTML = marked.parse(content);
+            // Highlight citation lines
+            const citations = [...contentDiv.querySelectorAll('p')].filter(
+                p => p.textContent.startsWith('[Source:')
+            );
+            citations.forEach(p => p.classList.add('citation'));
         } else {
             contentDiv.textContent = content;
         }
@@ -222,7 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         removeImageBtn.click();
 
         try {
-            let res = await fetch(`http://localhost:8000/api/v1/chat/conversations/${currentConversationId}/messages`, {
+            let res = await fetch(`${API_BASE}/api/v1/chat/conversations/${currentConversationId}/messages`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -233,7 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const newToken = await tryRefreshToken();
                 if (newToken) {
                     token = newToken;
-                    res = await fetch(`http://localhost:8000/api/v1/chat/conversations/${currentConversationId}/messages`, {
+                    res = await fetch(`${API_BASE}/api/v1/chat/conversations/${currentConversationId}/messages`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`
@@ -253,7 +264,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Failed to send message:', err);
             appendMessage('assistant', 'Error: Network connection failed.');
         }
-    }
     }
 
     sendBtn.addEventListener('click', sendMessage);
