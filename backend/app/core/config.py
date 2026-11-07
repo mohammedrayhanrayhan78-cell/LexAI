@@ -22,18 +22,15 @@ class Settings(BaseSettings):
     LLM_TIMEOUT_SECONDS: int = 30
     
     GROQ_API_KEY: Optional[str] = None
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
     GROQ_WHISPER_MODEL: str = "whisper-large-v3"
 
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-1.5-pro"
-
-    OPENAI_API_KEY: Optional[str] = None
-    OPENAI_MODEL: str = "gpt-4o"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 
     # Embedding & RAG Configuration
     EMBEDDING_PROVIDER: str = "gemini"
-    EMBEDDING_MODEL: str = "text-embedding-004"
+    EMBEDDING_MODEL: str = "gemini-embedding-2"
     EMBEDDING_DIMENSIONS: int = 768
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200

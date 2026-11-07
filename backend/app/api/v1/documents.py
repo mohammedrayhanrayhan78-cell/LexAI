@@ -91,7 +91,9 @@ async def upload_document(
             chunks = TextChunker.chunk_text(page_text)
             for chunk_content in chunks:
                 formatted_chunk = f"[Source: {file.filename}, Page {page_num}]\n{chunk_content}"
-                embedding = await embedding_service.get_embedding(formatted_chunk)
+                embedding = await embedding_service.get_embedding(
+                    formatted_chunk, task_type="retrieval_document"
+                )
                 
                 db_chunk = DocumentChunk(
                     id=uuid.uuid4(),
@@ -102,6 +104,14 @@ async def upload_document(
                 )
                 db.add(db_chunk)
                 chunk_counter += 1
+
+        if chunk_counter == 0:
+            document.status = "failed"
+            await db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="PDF produced no text chunks to embed. Re-upload a text or OCR-readable PDF.",
+            )
 
         document.status = "indexed"
         await db.commit()
@@ -121,7 +131,7 @@ async def upload_document(
         await db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to process and index the PDF document.",
+            detail=f"Indexing failed: {e}. Re-upload the PDF after fixing the issue.",
         )
 
 

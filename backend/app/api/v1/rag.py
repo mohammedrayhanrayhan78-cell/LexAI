@@ -54,7 +54,9 @@ async def index_document(
 
         # 2. Generate embeddings and persist chunks
         for idx, chunk_content in enumerate(chunks):
-            embedding = await embedding_service.get_embedding(chunk_content)
+            embedding = await embedding_service.get_embedding(
+                chunk_content, task_type="retrieval_document"
+            )
             db_chunk = DocumentChunk(
                 document_id=document.id,
                 content=chunk_content,

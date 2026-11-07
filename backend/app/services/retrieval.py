@@ -29,7 +29,9 @@ class RetrievalService:
         self, db: AsyncSession, query: str, user_id: uuid.UUID, top_k: int = settings.TOP_K_RETRIEVAL
     ) -> List[str]:
         try:
-            query_embedding = await self.embedding_service.get_embedding(query)
+            query_embedding = await self.embedding_service.get_embedding(
+                query, task_type="retrieval_query"
+            )
             
             # Execute cosine distance similarity search restricted to documents owned by user
             stmt = (
