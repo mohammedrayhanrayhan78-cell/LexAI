@@ -86,10 +86,16 @@ class LegalAgentGraph:
         return "direct"
 
     async def rag_retrieval_node(self, state: AgentState) -> AgentState:
-        chunks = await retrieval_service.search_relevant_chunks(
-            self.db, query=state["query"], user_id=state["user_id"]
-        )
-        state["retrieved_context"] = chunks
+        try:
+            chunks = await retrieval_service.search_relevant_chunks(
+                self.db, query=state["query"], user_id=state["user_id"]
+            )
+            state["retrieved_context"] = chunks
+            state["retrieval_failed"] = False
+        except Exception as e:
+            logger.error(f"RAG retrieval failed: {e}")
+            state["retrieved_context"] = []
+            state["retrieval_failed"] = True
         return state
 
     async def tool_execution_node(self, state: AgentState) -> AgentState:
@@ -109,16 +115,49 @@ class LegalAgentGraph:
         messages = state["messages"]
         image_bytes = state.get("image_bytes")
         retrieved_context = state.get("retrieved_context", [])
+        retrieval_failed = state.get("retrieval_failed", False)
+        intent = state.get("intent", "rag")
 
         formatted_history = list(messages)
-        if retrieved_context:
-            context_block = "Relevant legal document excerpts:\n" + "\n---\n".join(retrieved_context)
+        cite_rules = (
+            "Answer from the excerpts first. Cite each claim with the exact tag as it appears "
+            "(for example [Source: file.pdf, Page 3]). If the excerpts do not answer the question, "
+            "say so. Label any general-knowledge part clearly. Never invent sources."
+        )
+        if retrieval_failed:
+            context_block = (
+                "Document retrieval failed. Do not claim to have used the user's files. "
+                "Never invent sources. Label the answer as general knowledge if you answer at all."
+            )
             formatted_history.insert(0, {"role": "system", "content": context_block})
+        elif retrieved_context:
+            context_block = (
+                cite_rules
+                + "\n\nRelevant legal document excerpts:\n"
+                + "\n---\n".join(retrieved_context)
+            )
+            formatted_history.insert(0, {"role": "system", "content": context_block})
+        elif intent == "rag":
+            formatted_history.insert(
+                0,
+                {
+                    "role": "system",
+                    "content": (
+                        "No excerpts from the user's documents were retrieved. "
+                        "Say clearly that this answer is not based on the user's documents. "
+                        "Never invent sources."
+                    ),
+                },
+            )
 
         if image_bytes is not None:
             response = await llm_router.generate_response_with_image(formatted_history, image_bytes)
         else:
             response = await llm_router.generate_response(formatted_history)
+
+        if retrieval_failed:
+            notice = "Notice: Document search failed; this answer is not based on your uploaded files."
+            response = f"{notice}\n\n{response}"
 
         state["final_response"] = response
         return state
@@ -130,6 +169,7 @@ class LegalAgentGraph:
             "query": query,
             "intent": "rag",
             "retrieved_context": [],
+            "retrieval_failed": False,
             "tool_output": None,
             "final_response": "",
             "image_bytes": image_bytes,

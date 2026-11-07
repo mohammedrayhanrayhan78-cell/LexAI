@@ -192,12 +192,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
         if (role === 'assistant') {
-            contentDiv.innerHTML = marked.parse(content);
-            // Highlight citation lines
-            const citations = [...contentDiv.querySelectorAll('p')].filter(
-                p => p.textContent.startsWith('[Source:')
+            const html = marked.parse(content);
+            contentDiv.innerHTML = String(html).replace(
+                /\[Source:[^\]]+\]/g,
+                (tag) => `<span class="source-chip">${tag}</span>`
             );
-            citations.forEach(p => p.classList.add('citation'));
         } else {
             contentDiv.textContent = content;
         }

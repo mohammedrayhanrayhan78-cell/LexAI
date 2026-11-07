@@ -47,7 +47,7 @@ class RetrievalService:
             return list(chunks)
         except Exception as e:
             logger.error(f"Vector similarity search failed: {e}")
-            return []
+            raise
 
 
 retrieval_service = RetrievalService()

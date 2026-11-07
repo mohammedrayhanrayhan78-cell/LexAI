@@ -10,6 +10,7 @@ class AgentState(TypedDict):
     query: str
     intent: str  # "direct" | "rag" | "summarize" | "compare"
     retrieved_context: List[str]
+    retrieval_failed: bool
     tool_output: Optional[str]
     final_response: str
     image_bytes: Optional[bytes]
