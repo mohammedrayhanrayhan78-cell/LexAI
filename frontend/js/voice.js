@@ -1,3 +1,5 @@
+import { API_BASE } from './config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('access_token');
     if (!token) return;
@@ -61,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         micBtn.style.opacity = '0.5';
 
         try {
-            const res = await fetch('http://localhost:8000/api/v1/voice/transcribe', {
+            const res = await fetch(`${API_BASE}/api/v1/voice/transcribe`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData

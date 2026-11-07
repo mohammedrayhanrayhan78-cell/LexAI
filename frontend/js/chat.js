@@ -192,11 +192,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
         if (role === 'assistant') {
-            const html = marked.parse(content);
-            contentDiv.innerHTML = String(html).replace(
+            const html = String(marked.parse(content)).replace(
                 /\[Source:[^\]]+\]/g,
                 (tag) => `<span class="source-chip">${tag}</span>`
             );
+            contentDiv.innerHTML = DOMPurify.sanitize(html);
         } else {
             contentDiv.textContent = content;
         }

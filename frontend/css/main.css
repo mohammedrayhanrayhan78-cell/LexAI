@@ -236,6 +236,14 @@ body, html {
     align-items: center;
 }
 
+.legal-disclaimer {
+    margin: 0;
+    padding: 0.4rem 1rem 0.75rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
 .image-preview-container {
     max-width: 800px;
     width: 100%;
