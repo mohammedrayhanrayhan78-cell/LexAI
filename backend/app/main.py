@@ -17,11 +17,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+_is_prod = settings.ENVIRONMENT.lower() == "production"
+
 app = FastAPI(
     title="Legal AI Assistant API",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
+    openapi_url=None if _is_prod else "/openapi.json",
 )
 
 app.add_middleware(

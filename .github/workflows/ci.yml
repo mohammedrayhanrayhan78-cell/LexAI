@@ -39,6 +39,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
+      - name: Secret Scan (block hardcoded keys)
+        run: |
+          # Fail if any real API key pattern is found in tracked files
+          if git grep -rn \
+            -e 'gsk_[A-Za-z0-9]\{30,\}' \
+            -e 'AIza[0-9A-Za-z_-]\{30,\}' \
+            -e 'sk-[A-Za-z0-9_-]\{30,\}' \
+            -- ':!*.env.example' ':!*.md' ':!*.txt'; then
+            echo "ERROR: Hardcoded secret detected in source files." && exit 1
+          fi
+          echo "Secret scan passed."
+
       - name: Run Linting / Flake8
         run: |
           pip install flake8

@@ -82,28 +82,28 @@ async def upload_document(
                 detail="Could not extract any text from the provided PDF.",
             )
 
-        # 3. Chunk and embed each page / text segment
-        chunk_counter = 0
+        # 3. Collect all chunks first, then batch-embed (1 API call per 100 chunks)
+        formatted_chunks: list[str] = []
         for page_info in pages:
             page_num = page_info["page_number"]
-            page_text = page_info["content"]
-            
-            chunks = TextChunker.chunk_text(page_text)
-            for chunk_content in chunks:
-                formatted_chunk = f"[Source: {file.filename}, Page {page_num}]\n{chunk_content}"
-                embedding = await embedding_service.get_embedding(
-                    formatted_chunk, task_type="retrieval_document"
+            for chunk_content in TextChunker.chunk_text(page_info["content"]):
+                formatted_chunks.append(
+                    f"[Source: {file.filename}, Page {page_num}]\n{chunk_content}"
                 )
-                
-                db_chunk = DocumentChunk(
+
+        chunk_counter = len(formatted_chunks)
+        if chunk_counter > 0:
+            embeddings = await embedding_service.get_embeddings_batch(
+                formatted_chunks, task_type="retrieval_document"
+            )
+            for idx, (chunk_text, embedding) in enumerate(zip(formatted_chunks, embeddings)):
+                db.add(DocumentChunk(
                     id=uuid.uuid4(),
                     document_id=document.id,
-                    content=formatted_chunk,
+                    content=chunk_text,
                     embedding=embedding,
-                    chunk_index=chunk_counter,
-                )
-                db.add(db_chunk)
-                chunk_counter += 1
+                    chunk_index=idx,
+                ))
 
         if chunk_counter == 0:
             document.status = "failed"
@@ -126,12 +126,12 @@ async def upload_document(
     except HTTPException as he:
         raise he
     except Exception as e:
-        logger.error(f"Document indexing pipeline failed: {e}")
+        logger.error(f"Document indexing pipeline failed for doc {document.id}: {e}")
         document.status = "failed"
         await db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Indexing failed: {e}. Re-upload the PDF after fixing the issue.",
+            detail="Indexing failed. Please re-upload the PDF. If the problem persists, contact support.",
         )
 
 
