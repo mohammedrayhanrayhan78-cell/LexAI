@@ -1,15 +1,10 @@
 import { initThemeToggle } from './theme.js';
 import { attachTTSHandler } from './voice.js';
+import { apiFetch, redirectToLogin } from './api.js';
 import { API_BASE } from './config.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     initThemeToggle();
-
-    let token = localStorage.getItem('access_token');
-    if (!token) {
-        window.location.href = 'login.html';
-        return;
-    }
 
     const conversationListEl = document.getElementById('conversation-list');
     const chatWindowEl = document.getElementById('chat-window');
@@ -19,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const newChatBtn = document.getElementById('new-chat-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const userEmailDisplay = document.getElementById('user-email-display');
-    
+
     const attachImageBtn = document.getElementById('attach-image-btn');
     const imageFileInput = document.getElementById('image-file-input');
     const imagePreviewContainer = document.getElementById('image-preview-container');
@@ -29,45 +24,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentConversationId = null;
     let selectedImageFile = null;
 
-    async function tryRefreshToken() {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) return null;
-        try {
-            const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh_token: refreshToken })
-            });
-            if (!res.ok) return null;
-            const data = await res.json();
-            localStorage.setItem('access_token', data.access_token);
-            if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-            return data.access_token;
-        } catch {
-            return null;
-        }
-    }
-
-    let currentToken = token;
+    // Verify the session. apiFetch refreshes or redirects to login on 401.
     try {
-        let userRes = await fetch(`${API_BASE}/api/v1/auth/me`, {
-            headers: { 'Authorization': `Bearer ${currentToken}` }
-        });
-        if (userRes.status === 401) {
-            const newToken = await tryRefreshToken();
-            if (newToken) {
-                currentToken = newToken;
-                userRes = await fetch(`${API_BASE}/api/v1/auth/me`, {
-                    headers: { 'Authorization': `Bearer ${currentToken}` }
-                });
-            }
-        }
+        const userRes = await apiFetch('/api/v1/auth/me');
         if (userRes.ok) {
             const userData = await userRes.json();
             userEmailDisplay.textContent = userData.email;
         } else {
-            localStorage.clear();
-            window.location.href = 'login.html';
+            redirectToLogin();
             return;
         }
     } catch (err) {
@@ -102,9 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadConversations() {
         try {
-            const res = await fetch(`${API_BASE}/api/v1/chat/conversations`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await apiFetch('/api/v1/chat/conversations');
             if (res.ok) {
                 const conversations = await res.json();
                 renderConversations(conversations);
@@ -132,12 +94,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function createNewConversation(title = 'New Legal Session') {
         try {
-            const res = await fetch(`${API_BASE}/api/v1/chat/conversations`, {
+            const res = await apiFetch('/api/v1/chat/conversations', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title })
             });
             if (res.ok) {
@@ -156,15 +115,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function selectConversation(id, title) {
         currentConversationId = id;
         chatTitleEl.textContent = title;
-        
+
         document.querySelectorAll('.history-item').forEach(el => {
             el.classList.remove('active');
         });
 
         try {
-            const res = await fetch(`${API_BASE}/api/v1/chat/conversations/${id}/messages`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await apiFetch(`/api/v1/chat/conversations/${id}/messages`);
             if (res.ok) {
                 const messages = await res.json();
                 chatWindowEl.innerHTML = '';
@@ -188,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function appendMessage(role, content) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
-        
+
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
         if (role === 'assistant') {
@@ -200,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             contentDiv.textContent = content;
         }
-        
+
         msgDiv.appendChild(contentDiv);
 
         if (role === 'assistant') {
@@ -232,26 +189,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         removeImageBtn.click();
 
         try {
-            let res = await fetch(`${API_BASE}/api/v1/chat/conversations/${currentConversationId}/messages`, {
+            // FormData bodies can be re-sent, so apiFetch's refresh-and-retry works here.
+            const res = await apiFetch(`/api/v1/chat/conversations/${currentConversationId}/messages`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
                 body: formData
             });
-            if (res.status === 401) {
-                const newToken = await tryRefreshToken();
-                if (newToken) {
-                    token = newToken;
-                    res = await fetch(`${API_BASE}/api/v1/chat/conversations/${currentConversationId}/messages`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: formData
-                    });
-                }
-            }
             if (res.ok) {
                 const data = await res.json();
                 appendMessage(data.assistant_message.role, data.assistant_message.content);
@@ -280,9 +222,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    logoutBtn.addEventListener('click', () => {
-        localStorage.clear();
-        window.location.href = 'login.html';
+    logoutBtn.addEventListener('click', async () => {
+        // The server clears the HttpOnly cookies; the page cannot do that itself.
+        try {
+            await fetch(`${API_BASE}/api/v1/auth/logout`, {
+                method: 'POST',
+                credentials: 'same-origin',
+            });
+        } finally {
+            redirectToLogin();
+        }
     });
 
     loadConversations();

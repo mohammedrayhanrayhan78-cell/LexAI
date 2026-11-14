@@ -1,21 +1,13 @@
-import { API_BASE } from './config.js';
+import { apiFetch } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-        window.location.href = 'login.html';
-        return;
-    }
-
     const uploadBtn = document.getElementById('upload-doc-btn');
     const fileInput = document.getElementById('pdf-file-input');
     const documentListEl = document.getElementById('document-list');
 
     async function loadDocuments() {
         try {
-            const res = await fetch(`${API_BASE}/api/v1/documents`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await apiFetch('/api/v1/documents');
             if (res.ok) {
                 const docs = await res.json();
                 renderDocuments(docs);
@@ -68,9 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadBtn.disabled = true;
 
         try {
-            const res = await fetch(`${API_BASE}/api/v1/documents/upload`, {
+            const res = await apiFetch('/api/v1/documents/upload', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
 
@@ -92,9 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function deleteDocument(id) {
         try {
-            const res = await fetch(`${API_BASE}/api/v1/documents/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const res = await apiFetch(`/api/v1/documents/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
             });
             if (res.ok) {
                 await loadDocuments();

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
@@ -12,12 +11,32 @@ from app.crud.crud_user import user_crud
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
-reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+# Cookie names used by the browser session. The access token is read from
+# the cookie for the web app; an Authorization header is still accepted for
+# API clients and tests.
+ACCESS_COOKIE = "lexai_access"
+REFRESH_COOKIE = "lexai_refresh"
+
+
+def _extract_access_token(request: Request) -> str | None:
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        return auth_header[7:].strip() or None
+    return request.cookies.get(ACCESS_COOKIE)
 
 
 async def get_current_user(
-    db: AsyncSession = Depends(get_db), token: str = Depends(reusable_oauth2)
+    request: Request, db: AsyncSession = Depends(get_db)
 ) -> User:
+    token = _extract_access_token(request)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

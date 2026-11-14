@@ -1,9 +1,6 @@
-import { API_BASE } from './config.js';
+import { apiFetch } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
     const micBtn = document.getElementById('mic-btn');
     const userInputEl = document.getElementById('user-input');
 
@@ -63,9 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
         micBtn.style.opacity = '0.5';
 
         try {
-            const res = await fetch(`${API_BASE}/api/v1/voice/transcribe`, {
+            const res = await apiFetch('/api/v1/voice/transcribe', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
 

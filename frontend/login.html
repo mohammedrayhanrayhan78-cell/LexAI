@@ -129,9 +129,7 @@
                     throw new Error(data.detail || 'Invalid email or password.');
                 }
 
-                localStorage.setItem('access_token', data.access_token);
-                localStorage.setItem('refresh_token', data.refresh_token);
-
+                // The server has set HttpOnly session cookies; nothing is stored here.
                 successAlert.textContent = 'Login successful! Redirecting...';
                 successAlert.style.display = 'block';
                 setTimeout(() => {

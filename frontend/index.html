@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <title>Legal AI Assistant</title>
     <script>
-        const token = localStorage.getItem('access_token');
-        window.location.replace(token ? 'chat.html' : 'login.html');
+        // Session cookies are HttpOnly and not visible here. chat.html checks
+        // the session and sends the user to login if it is missing.
+        window.location.replace('chat.html');
     </script>
 </head>
 <body></body>

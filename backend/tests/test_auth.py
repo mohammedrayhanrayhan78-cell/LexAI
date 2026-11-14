@@ -63,9 +63,47 @@ def test_login_success(client):
             "password": "Password123!",
         })
     assert resp.status_code == 200
-    body = resp.json()
-    assert "access_token" in body
-    assert body["token_type"] == "bearer"
+    # Tokens must live in HttpOnly cookies, never in the JSON body.
+    assert "access_token" not in resp.json()
+    set_cookie = resp.headers.get("set-cookie", "")
+    assert "lexai_access=" in set_cookie
+    assert "lexai_refresh=" in set_cookie
+    assert "HttpOnly" in set_cookie
+    assert "SameSite=lax" in set_cookie.lower() or "samesite=lax" in set_cookie.lower()
+
+
+def test_login_cookie_auth_reaches_me(client):
+    """A browser session (cookie only, no Authorization header) can call /me."""
+    db_user = _make_db_user()
+    with patch("app.api.v1.auth.user_crud") as mock_crud:
+        mock_crud.get_by_email = AsyncMock(return_value=db_user)
+        login = client.post("/api/v1/auth/login", json={
+            "email": db_user.email,
+            "password": "Password123!",
+        })
+    assert login.status_code == 200
+    client.cookies.set("lexai_access", create_access_token(subject=db_user.id))
+    with patch("app.api.deps.user_crud") as deps_crud:
+        deps_crud.get_by_id = AsyncMock(return_value=db_user)
+        from app.main import app as _app
+        from app.api.deps import get_current_user as _dep
+        # Drop the conftest override so the real cookie path runs.
+        _app.dependency_overrides.pop(_dep, None)
+        try:
+            resp = client.get("/api/v1/auth/me")
+        finally:
+            from tests.conftest import override_get_current_user
+            _app.dependency_overrides[_dep] = override_get_current_user
+    client.cookies.clear()
+    assert resp.status_code == 200
+
+
+def test_logout_clears_auth_cookies(client):
+    resp = client.post("/api/v1/auth/logout")
+    assert resp.status_code == 200
+    set_cookie = resp.headers.get("set-cookie", "")
+    assert "lexai_access=" in set_cookie
+    assert "lexai_refresh=" in set_cookie
 
 
 def test_login_wrong_password(client):
@@ -114,7 +152,26 @@ def test_refresh_token_success(client):
 
         resp = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_tok})
     assert resp.status_code == 200
-    assert "access_token" in resp.json()
+    assert "access_token" not in resp.json()
+    assert "lexai_access=" in resp.headers.get("set-cookie", "")
+
+
+def test_refresh_token_from_cookie(client):
+    db_user = _make_db_user()
+    refresh_tok = create_refresh_token(subject=db_user.id)
+    client.cookies.set("lexai_refresh", refresh_tok, path="/api/v1/auth")
+    with patch("app.api.v1.auth.user_crud") as mock_crud:
+        mock_crud.get_by_id = AsyncMock(return_value=db_user)
+        resp = client.post("/api/v1/auth/refresh")
+    client.cookies.clear()
+    assert resp.status_code == 200
+    assert "lexai_access=" in resp.headers.get("set-cookie", "")
+
+
+def test_refresh_without_any_token(client):
+    client.cookies.clear()
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 401
 
 
 def test_refresh_token_invalid(client):
