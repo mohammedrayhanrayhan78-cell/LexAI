@@ -75,3 +75,15 @@ jobs:
               print('Database connection verified successfully.')
           asyncio.run(test_db())
           "
+
+      - name: Run pytest suite
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:testpassword@localhost:5432/test_legal_ai_db
+          JWT_SECRET_KEY: ci_test_secret_key_at_least_32_chars_long
+          JWT_REFRESH_SECRET_KEY: ci_refresh_test_key_at_least_32_chars_long
+          ENVIRONMENT: development
+          GEMINI_API_KEY: fake_gemini_key
+          GROQ_API_KEY: fake_groq_key
+        run: |
+          pip install pytest pytest-asyncio httpx
+          cd backend && python -m pytest tests/ -v --tb=short
